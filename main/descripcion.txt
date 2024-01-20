@@ -1,0 +1,79 @@
+## Reto TD
+
+# Datos del equipo y/o participantes:
+
+Si ha participado de forma individual, indique:
+
+- Nombre de usuario Kaggle
+- NIA:
+
+Si ha participado como equipo:
+
+- Nombre del equipo en Kaggle
+- Participante 1: Jorge Monserrat Sánchez
+    - Nombre de usuario Kaggle: jorgemonserrat
+    - NIA: 100516411
+- Participante 2: Juan Bosco Atienza
+    - Nombre de usuario Kaggle: juanatienza
+    - NIA: 100512236
+
+
+# RECONOCIMIENTO DE AUTORÍAS
+
+Todo el código es de elaboración propia, excepto la función "calcula_prediccion_coste", inspirada por una pista dada por Jerónimo en clase.
+
+# PREPROCESADO
+
+El primer paso fue importar los conjuntos de datos de entrenamiento y prueba en dos DataFrames de pandas, dividiendo el conjunto de entrenamiento 
+en dos partes: una para los datos utilizados para entrenar el modelo y otra para las etiquetas correspondientes.
+
+Procedimos a analizar estos datos, observando que las características numéricas (de tipo float) variaban entre 0 y 1, y no detectamos outliers
+ni valores nulos. A pesar de esto, decidimos experimentar tanto con escalado estándar como con escalado MinMax en nuestros modelos. 
+Observamos que, mientras el escalado mejoraba en cierta medida el desempeño de modelos como KNN, SVM y MLP, no tenía un impacto significativo en los modelos basados
+en árboles de decisión. Otro aspecto crucial que notamos fue un desbalance significativo en la distribución de las clases, donde las clases 0 y 1 eran predominantemente más frecuentes
+que las demás. Esto nos llevó a emplear diversas técnicas de muestreo, incluyendo undersampling, oversampling, SMOTE y ADASYN. 
+Con SMOTE y ADASYN, experimentamos con diferentes valores de k_neighbors para determinar cuál proporcionaba un mejor rendimiento. Este fue SMOTE con k_neighbors = 3.
+Debido a nuestro decantamiento por los modelos basados en árboles, nos llevó a concluir que el preprocesado debía enfocarse principalmente en 
+el reequilibrio de las clases.
+
+También exploramos si el rendimiento de los modelos mejoraba con el uso de PCA, extrayendo el 80% de la varianza (equivalente a 35 componentes), 
+así como mediante la eliminación de características menos relevantes en modelos basados en árboles de decisión. Sin embargo, descubrimos 
+que los mejores resultados se obtenían sin aplicar el análisis de componentes principales y manteniendo todas las características.
+
+Nuestra metodología para evaluar los modelos implicó inicialmente dividir el conjunto de datos de entrenamiento en 
+subconjuntos de entrenamiento y prueba. Esto nos permitió obtener una evaluación realista del rendimiento en datos no vistos previamente.
+En esta fase, probamos una variedad de modelos, incluyendo KNN, SVM, RandomForest, ExtraTrees, MLP y XGBoost. El enfoque adoptado para cada uno
+de estos modelos fue el mismo practicamente: comenzamos con una búsqueda preliminar de los mejores hiperparámetros utilizando GridSearch y
+luego procediamos a realizar ajustes manuales, refinando los hiperparámetros basándonos en el desempeño observado en el conjunto de prueba.
+Luego para hacer una submission cogiamos el modelo con los hiperparámetros y lo entrenabamos con todo el dataset de entrenamiento, tras esto
+realizabamos una validación cruzada en 10 partes mediante KFold para asegurar que el modelo seguía ofreciendo un buen desempeño.
+
+Un aspecto destacable de nuestro proceso fue el ajuste posterior del modelo basado en una matriz de coste. El objetivo de este ajuste era
+priorizar la precisión en la predicción de aquellas clases que, si se clasificaban incorrectamente, podrían conllevar un error más significativo. 
+Para lograr esto, desarrollamos la función 'calcula_prediccion_coste'. Esta función realiza un producto matricial entre el arreglo de 
+probabilidades generado por el modelo y la matriz de coste. El resultado es una nueva matriz, donde cada elemento representa el coste esperado de
+clasificar una muestra en una clase específica, tomando en cuenta las probabilidades asociadas a todas las clases y los costes correspondientes.
+Este enfoque nos permitió afinar las predicciones del modelo de manera más efectiva, considerando no solo la probabilidad, sino también el 
+impacto del error de clasificación.
+
+# MODELO/ALGORITMO ELEGIDO
+
+Entre los algoritmos que probamos, XGBoost se destacó como el más efectivo, alcanzando una puntuación de 0.18 en Kaggle. 
+Este algoritmo se fundamenta en el uso de árboles de decisión, similar a RandomForest y ExtraTrees. Sin embargo, la principal diferencia radica
+en su enfoque de 'boosting'. Mientras que algoritmos como RandomForest o ExtraTrees construyen sus árboles de decisión de manera independiente
+para luego combinarlos, XGBoost adopta un enfoque secuencial. En este enfoque, cada árbol nuevo se construye para corregir los errores cometidos
+por los árboles anteriores. 
+
+# SELECCIÓN DE HIPERPARÁMETROS
+
+
+Iniciamos la selección de hiperparámetros para nuestro modelo haciendo un GridSearch para obtener un conjunto inicial de parámetros.
+Durante este proceso, observamos que incrementar el número de n_estimators mejoraba el rendimiento del modelo cuando max_depth estaba configurado 
+en 60. También encontramos que reducir el valor de learning_rate, aunque ralentizaba el modelo, mejoraba su rendimiento. Sin embargo, al aumentar 
+el número de estimadores a aproximadamente 800, notamos una disminución en el rendimiento. Esto nos llevó a reducir el max_depth a 40 y a 
+introducir un valor de gamma = 0.2 para agregar regularización, lo que ayudó a prevenir el sobreajuste.
+
+Con estos ajustes, logramos mejorar el rendimiento del modelo hasta que llegamos a 2000 estimadores. Aunque el tiempo de ejecución comenzó a 
+aumentar desproporcionadamente en comparación con la mejora en el rendimiento después de los 1500 estimadores, continuamos observando mejoras
+hasta llegar a 2000. A partir de aqui dejo de aumentar el rendimiento por lo que nuestro modelo final se quedó así.
+
